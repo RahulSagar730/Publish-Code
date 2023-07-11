@@ -1,0 +1,287 @@
+@using Honda2WheelersWebSite.Models
+@model LoginViewModel
+@{
+    ViewBag.Title = "Log in";
+}
+<p>&nbsp;</p>
+<h2>@ViewBag.Title.</h2>
+<div class="row">
+    <div class="col-md-8">
+        <div class="form-horizontal" id="loginForm">
+            @*@using (Html.BeginForm("SendOTP", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+                {*@
+            @Html.AntiForgeryToken()
+            <h4>Use a local account to log in.</h4>
+            <hr />
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+            <div class="form-group">
+                @Html.LabelFor(m => m.Email, new { @class = "col-md-2 control-label" })
+                <div class="col-md-10">
+                    @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
+                    @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.Password, new { @class = "col-md-2 control-label" })
+                <div class="col-md-10">
+                    @Html.PasswordFor(m => m.Password, new { @class = "form-control" })
+                    @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-offset-2 col-md-10">
+                    <div class="checkbox">
+                        @Html.CheckBoxFor(m => m.RememberMe)
+                        @Html.LabelFor(m => m.RememberMe)
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-offset-2 col-md-10">
+                    <input type="submit" value="Log in" class="btn btn-default" onclick="getOTP()" id="btnLogin" />
+                    <img src="~/assets/images/loader.gif" id="imgLoader" style="display:none" />
+                </div>
+            </div>
+            @*<p>
+                    @Html.ActionLink("Register as a new user", "Register")
+                </p>*@
+            @* Enable this once you have account confirmation enabled for password reset functionality
+                <p>
+                    @Html.ActionLink("Forgot your password?", "ForgotPassword")
+                </p>*@
+            @*}*@
+        </div>
+
+        <div id="otpSection" style="margin:30px 0px 30px 0px; display:none;">
+            <div class="row">
+                <div class="col-sm-3">
+                </div>
+                <div class="col-sm-5">
+                    <p class="form-group" id="optmsg">Please enter 4 Digit OTP: </p>
+                    <br />
+                    <p id="test" class="text-danger" style="margin-top:20px;"></p>
+                    <p id="otpPanding" class="text-danger" style="margin-top:20px;"></p>
+                </div>
+                <div class="col-sm-3">
+                    @Html.EditorFor(model => model.OTP, new { htmlAttributes = new { @class = "form-group", id = "OTP", required = "required", @placeholder = "Enter OTP", style = "width:70%", maxlength = "4" } })
+                    @Html.ValidationMessageFor(model => model.OTP, "", new { @class = "text-danger from-group" })
+                    <div id="divTimer"> <span id="timer" class="text-danger"></span></div>
+                    <div class="form-group" id="MobileDigit" style="margin-left:-35px;">OTP Sent on XXXXXXXXXX</div>
+                    <input type="submit" value="Resend" class="btn btn-default form-group" onclick="getOTP()" id="btnResend" style="margin: 60px 0px 0px 0px;" />
+                    <input type="submit" value="Submit" class="btn btn-default form-group" onclick="VerifyOTP()" id="btnverifyOTP"/>
+                    <img src="~/assets/images/loader.gif" id="imgLoader" style="display:none" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}
+<script type="text/javascript">
+
+    // Send Otp Method
+    function getOTP() {
+        debugger;
+        $('#imgLoader').show();
+        $('#OTP').innerHTML = "";
+        test.innerHTML = "";
+        var Email = $('#Email').val();
+        if (Email == "") {
+            alert('Please enter email id');
+        }
+        var Pass = $('#Password').val();
+        if (Email != "" && Pass == "") {
+            alert('Please enter password');
+        }
+        var remember = $('#RememberMe').val();
+        if (Email != "" && Pass !="") {
+            jQuery("#verifyOTP").removeClass('d-none');
+            $.ajax({
+                url: '@Url.Action("SendOTP")',
+                type: "POST",
+                dataType: "JSON",
+                data: { Email: Email, Password: Pass, RememberMe: remember },
+                success: function (data) {
+                    debugger;
+                    $('#imgLoader').hide();
+                    $("#MobileNo").prop("readonly", true);
+                    if (data.isSMSSent) {
+                        $('#loginForm').hide();
+                        $('#otpSection').show();
+                        alert(data.Message);
+                        $('#btnSubmit').show();
+                        $('#btnResend').hide();
+                        $('#OTP').show();
+                        $('#OTP').val('');
+                        $('#MobileDigit').show();
+                        $('#optmsg').text('Please enter 4 Digit OTP:');
+                        $('#MobileDigit').show();
+                        $('#MobileDigit').text('OTP Sent on XXXXXXXXXX' + data.MobileDigit);
+                        $('#btnverifyOTP').show();
+                        startTimer();
+                    }
+                    else if (data.isAttempt == false) {
+                        alert(data.Message);
+                        $('#test').show();
+                        $('#test').text(data.Message);
+                    }
+                    else if (data.MobileDigit == "") {
+                        alert(data.Message);
+                        $('#test').show();
+                        $('#test').text(data.Message);
+                    }
+                    else {
+                        $('#OTP').innerHTML = "";
+                        $('#otpSection').hide();
+                        $('#loginForm').show();
+                        $('#btnLogin').hide();
+                        alert(data.Message);
+                    }
+                },
+                error: function () {
+                    $('#imgLoader').hide();
+                    $("#MobileNo").removeProp('readonly');
+                }
+            });
+        }
+        else {
+            $('#imgLoader').hide();
+            $("#MobileNo").removeProp('readonly');
+        }
+    }
+    var timerId = 0;
+    var otpExpired = 1;
+    // Call Verify Method
+    function VerifyOTP() {
+        debugger;
+        $('#imgLoader').show();
+        $('#OTP').innerHTML = "";
+        test.innerHTML = "";
+        var Otp = $('#OTP').val();
+        if (Otp != "") {
+            jQuery("#verifyOTP").removeClass('d-none');
+            $.ajax({
+                url: '@Url.Action("VerifyOTP")',
+                type: "POST",
+                dataType: "JSON",
+                data: { otp: Otp },
+                success: function (data) {
+                    debugger;
+                    if (data.isAttempt) {
+                        $('#divTimer').hide();
+                        $('#btnverifyOTP').hide();
+                        clearTimeout(timerId);
+                        $('#btnResend').hide();
+                        $('#otpSection').hide();
+                        alert(data.Message);
+                    }
+                    else if (data.Message != null) {
+                        $('#otpPanding').show();
+                        $('#otpPanding').text(data.MobileDigit);
+                        alert(data.Message);
+                        $('#test').show();
+                        $('#test').text(data.Message);
+                    }
+                    else {
+                        clearTimeout(timerId);
+                        window.location.pathname = data.Url;
+                    }
+                },
+                error: function () {
+                    $('#imgLoader').hide();
+                    $("#MobileNo").removeProp('readonly');
+                }
+            });
+        }
+        else {
+            if (otpExpired == 0) {
+                $('#test').text('Otp Expired.');
+                alert('Please resend otp');
+            }
+            else {
+                alert('Please enter otp');
+            }
+            $('#imgLoader').hide();
+            $("#MobileNo").removeProp('readonly');
+        }
+    }
+    
+    //Timer
+    function startTimer() {
+        debugger;
+        var timmer = $('#timecount').val();
+        var timeLeft;
+
+        if (timmer != null && timmer != "" && timmer > 0) {
+            timeLeft = timmer - 1;
+
+        }
+        else {
+            timeLeft = 30;
+        }
+
+        //$("#Timer").val(timeleft);
+        $('#divTimer').show();
+        $("#btnGetOtp").css("display", "None");
+        var elem = document.getElementById('#divTimer');
+        timerId = setInterval(countdown, 1000);
+        /* $("#timer").val(timerId);*/
+        function countdown() {
+
+            timer.innerHTML = 'OTP Expires in' + ' ' + timeLeft + ' ' + 'Seconds.';
+            timeLeft--;
+
+            var left = $("#timecount").val(timeLeft);
+            if (timeLeft == -1) {
+                test.innerHTML = 'Otp Expired.';
+                var expire = -1;
+                otpExpired = 0;
+                // $("#timer").val(-1);
+                $('#divTimer').hide();
+                $('#btnResend').show();
+                $('#optmsg').text('Please click on Resend to Generate OTP:');
+                $('#OTP').hide();
+                $('#OTP').val('');
+                $('#MobileDigit').hide();
+                $('#btnverifyOTP').hide();
+                clearTimeout(timerId);
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        //to allow only numberic
+        $('#OTP').keypress(function (e) {
+            NumericOnly(e);
+        });
+        // OTP number and allow only 4 digits method
+        function NumericOnly(e) {
+            debugger;
+            var otpDigit = $('#OTP').val();
+            var regex = new RegExp("^[0-9\b]+$");
+            var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
+            // for 4 digit number only
+            if (otpDigit.length > 3) {
+                e.preventDefault();
+                return false;
+            }
+            if (e.charCode < 48 && e.charCode > 57) {
+                if (otpDigit.length == 0) {
+                    e.preventDefault();
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+            if (regex.test(str)) {
+                return true;
+            }
+            e.preventDefault();
+            return false;
+        };
+    });
+    
+
+</script>

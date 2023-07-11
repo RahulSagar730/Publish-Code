@@ -1,0 +1,73 @@
+public async Task<ActionResult> SendOTP(string Email, string Password, bool RememberMe)
+        {
+            try
+            {
+                int loginAttempt = Convert.ToInt32(TempData.Peek("LoginAttempt"));
+                SMSSendResponse smsSendResponse = new SMSSendResponse();
+                ApplicationUser user = context.Users.Where(u => u.UserName.Equals(Email, StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+                Session["user"] = JsonConvert.SerializeObject(user);
+                if (user != null)
+                {
+                    if (user.Locked)
+                    {
+                        SaveLoginDetail(user.Id, 0, 0, 1, user.PhoneNumber, null, 0, null, loginAttempt);
+                        smsSendResponse.Message = "Lockout";
+                        return Json(smsSendResponse, JsonRequestBehavior.AllowGet);
+                    }
+                }
+                else
+                {
+                    smsSendResponse.isAttempt = false;
+                    smsSendResponse.Message = "Invalid login attempt.";
+                    return Json(smsSendResponse, JsonRequestBehavior.AllowGet);
+                }
+
+                var result = await SignInManager.PasswordSignInAsync(Email, Password, RememberMe, shouldLockout: false);
+                Session["result"] = result;
+                if (result.ToString().Equals("Success", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+                    {
+                        smsSendResponse.MobileDigit = user.PhoneNumber.Substring((user.PhoneNumber.Length - 4), 4);
+                        int generatedOTPNo = Convert.ToInt32(TempData.Peek("generateOTPCount"));
+                        if (generatedOTPNo <= 2)
+                        {
+                            string otpcode = generateOTP.CreateRandomCode(4);
+                            TempData["otp"] = otpcode;
+                            string msg = "Hi," + @"%0a" + "Use " + otpcode + " as one time password (OTP) to submit your query." + @"%0a%0a" + "Thanks" + @"%0a" + "Team Honda";
+                            smsSendResponse.isSMSSent = Utilities.Send_SMS(user.PhoneNumber, msg);
+                            smsSendResponse.Message = "OTP has been sent successfully";
+                            generatedOTPNo++;
+                            TempData["generateOTPCount"] = generatedOTPNo;
+                            SaveLoginDetail(user.Id, 0, 0, 1, user.PhoneNumber, otpcode, generatedOTPNo, null, loginAttempt);
+                        }
+                        else
+                        {
+                            smsSendResponse.isAttempt = true;
+                            smsSendResponse.Message = "Sorry! You have already sent maximum no. of otp request. Please try again after some time.";
+                        }
+                        return Json(smsSendResponse, JsonRequestBehavior.AllowGet);
+                    }
+                    else
+                    {
+                        SaveLoginDetail(user.Id, 0, 0, 1, user.PhoneNumber, null, 0, null, loginAttempt);
+                        smsSendResponse.isAttempt = true;
+                        smsSendResponse.MobileDigit = string.Empty;
+                        smsSendResponse.Message = "Please Contact Your Administrator for Mobile Number Update";
+                        return Json(smsSendResponse, JsonRequestBehavior.AllowGet);
+                    }
+                }
+                else
+                {
+                    SaveLoginDetail(user.Id, 0, 0, 0, user.PhoneNumber, null, 0, null, loginAttempt);
+                    smsSendResponse.isAttempt = false;
+                    smsSendResponse.Message = "Invalid login attempt.";
+                    return Json(smsSendResponse, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception)
+            {
+                return RedirectToAction("Login");
+                throw;
+            }
+        }

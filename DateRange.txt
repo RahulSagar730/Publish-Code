@@ -1,0 +1,192 @@
+@model  Honda2WheelersWebSite.ViewModel.LoginDetailSearchVM
+@{
+    ViewBag.Title = "LoginRecord";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<nav class="navbar navbar-default" style="margin-top: 20px">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">Search Area</a>
+    </div>
+    <style>
+        .navbar-default .navbar-nav > li > a {
+            color: #428bca;
+        }
+    </style>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <div class="navbar-form">
+            @using (Html.BeginForm("LoginRecord", "Account", FormMethod.Post, new { enctype = "multipart/form-data", @class = "form-horizontal", role = "form" }))
+            {
+                <div class="col-lg-3">
+                    <spen>Category</spen>
+                    @Html.DropDownListFor(model => model.Category, new List<SelectListItem>
+                            {
+                            new SelectListItem { Text = "-- Select Category --", Value = "" },
+                            new SelectListItem { Text = "Admin", Value = "Admin" },
+                            new SelectListItem { Text = "Dealer", Value = "Dealer"},
+                            new SelectListItem { Text = "FAQTeam Admin", Value = "FAQTeam_Admin"},
+                            new SelectListItem { Text = "Super Admin", Value = "SuperAdmin"},
+                            }, new { @class = "form-control" })
+                </div>
+                <div class="col-lg-2">
+                    <spen>From Date</spen>
+                    @Html.TextBoxFor(m => m.FromDate, new { @maxlength = "100", @type = "date", @class = "form-control" })
+                </div>
+                <div class="col-lg-2">
+                    <spen>End Date</spen>
+                    @Html.TextBoxFor(m => m.ToDate, new { @maxlength = "100", @type = "date", @class = "form-control" })
+                </div>
+                <input type="submit" value="Submit" class="btn btn-default" onclick="javascript:return ValidateControlData();" style="margin-top: 20px;" />
+                <button type="submit" class="btn btn-default" name="buttonType" value="export" style="margin:20px 0px 0px 30px;">Export To Excel</button>
+            }
+        </div>
+    </div>
+</nav>
+
+<div class="table-responsive">
+    <table class="table table-bordered">
+
+        <tr>
+            <th>S No.</th>
+            <th>Login Id</th>
+            <th>Category</th>
+            <th>Date Time</th>
+            <th>Mobile Number</th>
+            <th>Login Success with Password</th>
+            <th>Generated OTP</th>
+            <th>OTP Verified</th>
+            <th>Login Success with OTP</th>
+            <th>OTP Count</th>
+            <th>IP Address</th>
+        </tr>
+        @{int index = 1;}
+        @foreach (var item in Model.lst_LoginDetailVM)
+        {
+            <tr>
+                <td>
+                    <span>@index</span>
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Id)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Role)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Login_date)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.MobileNo)
+                </td>
+                <td>
+                    @if (item.isPasswordCorrect == 1)
+                    {
+                        <span>Yes</span>
+                    }
+                    else
+                    {
+                        <span>No</span>
+                    }
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.OtpCode)
+                </td>
+                <td>
+                    @if (item.isOtpVerified == 1)
+                    {
+                        <span>Yes</span>
+                    }
+                    else
+                    {
+                        <span>No</span>
+                    }
+                </td>
+                <td>
+                    @if (item.isLoginSuccesswithOtp == 1)
+                    {
+                        <span>Yes</span>
+                    }
+                    else
+                    {
+                        <span>No</span>
+                    }
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ResendOTP)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IPAddress)
+                </td>
+            </tr>
+            index++;
+        }
+
+    </table>
+</div>
+
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        function ValidateControlData() {
+            var isValid = true;
+            var category = $('#Category').val();
+            var sdate = $('#FromDate').val();
+            var edate = $('#EndDate').val();
+            if (category == "") {
+                alert('Please select category.');
+                isValid = false;
+            }
+            else if (sdate == "" || todate == undefined) {
+                alert('Please select to from date.');
+                isValid = false
+            }
+            else if (edate == "" || edate == undefined) {
+                alert('Please select to to date.');
+                isValid = false
+            }
+            return isValid;
+        }
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var startDateInput = document.getElementById("FromDate");
+            var endDateInput = document.getElementById("ToDate");
+            startDateInput.addEventListener("input", function () {
+                var startDate = new Date(startDateInput.value);
+                var endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 7);
+                endDateInput.min = formatDate(startDate);
+                endDateInput.max = formatDate(endDate);
+            });
+            function formatDate(date) {
+                var year = date.getFullYear();
+                var month = String(date.getMonth() + 1).padStart(2, "0");
+                var day = String(date.getDate()).padStart(2, "0");
+                return `${year}-${month}-${day}`;
+            }
+        });
+    </script>
+    @if (Model.lst_LoginDetailVM.Count > 0)
+    {
+        <script>
+            $(document).ready(function () {
+                $('#btn-export').show();
+            });
+        </script>
+    }
+    else
+    {
+        <script>
+            $(document).ready(function () {
+                $('#btn-export').hide();
+            });
+        </script>
+    }
+}

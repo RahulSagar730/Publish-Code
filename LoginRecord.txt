@@ -1,0 +1,79 @@
+public ActionResult LoginRecord(LoginDetailSearchVM obj, string buttonType)
+        {
+            try
+            {
+                LoginDetailSearchVM model = new LoginDetailSearchVM();
+                if (!string.IsNullOrWhiteSpace(buttonType))
+                {
+                    List<HondaAPIPanelLoginHistory> data = null;
+                    if (!string.IsNullOrWhiteSpace(obj.Category) && !string.IsNullOrWhiteSpace(obj.FromDate) && !string.IsNullOrWhiteSpace(obj.ToDate))
+                    {
+                        var startDate = Convert.ToDateTime(obj.FromDate);
+                        var endDate = Convert.ToDateTime(obj.ToDate);
+                        data = db.HondaAPIPanelLoginHistories.Where(x => DbFunctions.TruncateTime(x.Login_date) >= startDate && DbFunctions.TruncateTime(x.Login_date) <= endDate && x.Role.Equals(obj.Category, StringComparison.CurrentCultureIgnoreCase)).ToList();
+                    }
+                    else
+                    {
+                        data = TempData["LoginHistoriesData"] as List<HondaAPIPanelLoginHistory>;
+                    }
+                    model.lst_LoginDetailVM = data;
+                    var exportData = data.OrderBy(x => x.Id).Select(x => new LoginDetailVM()
+                    {
+                        Id = x.Id,
+                        Category = x.Role,
+                        Login_Date = x.Login_date,
+                        MobileNo = x.MobileNo,
+                        Login_Success_with_Password = x.isPasswordCorrect == 1 ? "Yes" : "No",
+                        Generated_OTP = x.OtpCode,
+                        OTP_Verified = x.isOtpVerified == 1 ? "Yes" : "No",
+                        Login_Success_with_OTP = x.isLoginSuccesswithOtp == 1 ? "Yes" : "No",
+                        OTP_Count = x.ResendOTP,
+                        IP_Address = x.IPAddress
+                    }).ToList();
+                    GridView gridview = new GridView();
+                    gridview.DataSource = exportData;
+                    gridview.DataBind();
+                    Response.ClearContent();
+                    Response.Buffer = true;
+                    Response.AddHeader("content-disposition", "attachment; filename = Login_Details.xls");
+                    Response.ContentType = "application/ms-excel";
+                    Response.Charset = "";
+                    using (StringWriter sw = new StringWriter())
+                    {
+                        using (HtmlTextWriter htw = new HtmlTextWriter(sw))
+                        {
+                            gridview.RenderControl(htw);
+                            Response.Output.Write(sw.ToString());
+                            Response.Flush();
+                            Response.End();
+                        }
+                    }
+                    return View(model);
+                }
+                else
+                {
+                    ApplicationUser user = JsonConvert.DeserializeObject<ApplicationUser>(Session["user"].ToString());
+                    if (user != null)
+                    {
+                        var role = UserManager.GetRoles(user.Id).FirstOrDefault();
+                        if (!string.IsNullOrWhiteSpace(role) && role.Equals("SuperAdmin", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            if (!string.IsNullOrWhiteSpace(obj.FromDate) && !string.IsNullOrWhiteSpace(obj.ToDate))
+                            {
+                                var startDate = Convert.ToDateTime(obj.FromDate);
+                                var endDate = Convert.ToDateTime(obj.ToDate);
+                                model.lst_LoginDetailVM = db.HondaAPIPanelLoginHistories.OrderByDescending(x => x.Id).Where(x => DbFunctions.TruncateTime(x.Login_date) >= startDate && DbFunctions.TruncateTime(x.Login_date) <= endDate && x.Role.Equals(obj.Category, StringComparison.CurrentCultureIgnoreCase)).ToList();
+                                TempData["LoginHistoriesData"] = model.lst_LoginDetailVM;
+                                return View(model);
+                            }
+                        }
+                    }
+                }
+                return RedirectToAction("LoginRecord");
+            }
+            catch (Exception)
+            {
+                return RedirectToAction("LoginRecord");
+                throw;
+            }
+        }

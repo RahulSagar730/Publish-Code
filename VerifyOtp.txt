@@ -1,0 +1,90 @@
+public ActionResult VerifyOTP(string otp)
+        {
+            try
+            {
+                SMSSendResponse response = new SMSSendResponse();
+                string otpcode = Convert.ToString(TempData.Peek("otp"));
+                ApplicationUser user = JsonConvert.DeserializeObject<ApplicationUser>(Session["user"].ToString());
+                int generatedOTPNo = Convert.ToInt32(TempData.Peek("generateOTPCount"));
+                int loginAttempt = Convert.ToInt32(TempData.Peek("LoginAttempt"));
+                if (loginAttempt <= 4)
+                {
+                    if (otpcode == otp && user != null)
+                    {
+                        SignInStatus result = (SignInStatus)Enum.Parse(typeof(SignInStatus), Session["result"].ToString());
+                        SaveLoginDetail(user.Id, 1, 1, 1, user.PhoneNumber, otpcode, generatedOTPNo, otp, loginAttempt);
+                        switch (result)
+                        {
+                            case SignInStatus.Success:
+                                var role = UserManager.GetRoles(user.Id).FirstOrDefault();
+                                if (role == "SuperAdmin")
+                                {
+                                    response.Url = "PriceMaster/Index";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                                else if (role == "FAQTeam_Admin")
+                                {
+                                    response.Url = "Faq_QuestionsAnswer/Index";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                                else if (role == "NaviCustomania")
+                                {
+                                    response.Url = "navi/customaniaReport";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                                else if (role == "ActivIndia")
+                                {
+                                    response.Url = "ActivIndiaCampaign/Index";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                                else if (role == "SuperAdmin" || role == "HondaRacingAdmin")
+                                {
+                                    response.Url = "HondaRacingIndiaAdmin/Sponsor/Index";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                                else if (role == "SuperAdmin" || role == "HondaCSRAdmin")
+                                {
+                                    response.Url = "CSRIndiaAdmin/Category/Index";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                                else
+                                {
+                                    AuthenticationManager.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
+                                    response.Url = "Home/Index";
+                                    return Json(response, JsonRequestBehavior.AllowGet);
+                                }
+                            case SignInStatus.LockedOut:
+                                response.Message = "User is Lockout";
+                                return Json(response, JsonRequestBehavior.AllowGet);
+                            case SignInStatus.RequiresVerification:
+                                response.Message = "SendCode";
+                                return Json(response, JsonRequestBehavior.AllowGet);
+                            case SignInStatus.Failure:
+                                response.Message = "Invalid login attempt.";
+                                return Json(response, JsonRequestBehavior.AllowGet);
+                            default:
+                                response.Message = "Invalid login attempt.";
+                                return Json(response, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+                    else
+                    {
+                        SaveLoginDetail(user.Id, 0, 0, 1, user.PhoneNumber, otpcode, generatedOTPNo, otp, loginAttempt);
+                        response.Message = "Invalid OTP";
+                        response.MobileDigit = 4 - loginAttempt + " attemp Panding";
+                        return Json(response, JsonRequestBehavior.AllowGet);
+                    }
+                }
+                else
+                {
+                    response.isAttempt = true;
+                    response.Message = "Sorry! You have already attempt maximum time of login request. Please try again after some time.";
+                    return Json(response, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception)
+            {
+                return RedirectToAction("LoginRecord");
+                throw;
+            }
+        }
