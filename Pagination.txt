@@ -1,0 +1,98 @@
+@*<nav class="navbar navbar-default" style="margin-top: 20px">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">Search Area</a>
+    </div>
+    <style>
+        .navbar-default .navbar-nav > li > a {
+            color: #428bca;
+        }
+    </style>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <div class="navbar-form">
+            <div class="col-sm-5">
+                @using (Html.BeginForm("ManageDealer", "services", FormMethod.Get, new { enctype = "multipart/form-data", @class = "form-horizontal", role = "form" }))
+                {
+                    <spen>Search By</spen>
+                    @Html.TextBoxFor(m => m.searchby, new { @maxlength = "100", @class = "form-control", @placeholder = "Search by email/user name/first name", @autocomplete = "off", @style="width:65%;"})
+                    <input type="submit" value="Submit" class="btn btn-default" />
+                }
+            </div>
+            <div class="col-sm-2">
+                @if (Model.previousPage)
+                {
+                    @Html.ActionLink("Previous", "ManageDealer", new { pageNumber = Model.currentPage - 1 }, new { @class = "form-control" })
+                }
+                else
+                {
+                    @Html.ActionLink("Previous", "ManageDealer", new { pageNumber = Model.currentPage - 1 }, new { @class = "form-control", @style = "pointer-events: none; text" })
+                }
+            </div>
+            <div class="col-sm-1">
+                @Html.DisplayFor(x => x.firstCount, new { @class = "form-control" }) -
+                @Html.DisplayFor(x => x.lastCount, new { @class = "form-control" })
+            </div>
+            <div class="col-sm-1">
+                @if (Model.nextPage)
+                {
+                    @Html.ActionLink("Next", "ManageDealer", new { pageNumber = Model.currentPage + 1 }, new { @class = "form-control" })
+                }
+                else
+                {
+                    @Html.ActionLink("Next", "ManageDealer", new { pageNumber = Model.currentPage + 1 }, new { @class = "form-control", @style = "pointer-events: none;" })
+                }
+            </div>
+            <div class="col-sm-1">
+                Total - @Html.DisplayFor(x => x.totalCount, new { @class = "form-control" })
+            </div>
+        </div>
+    </div>
+</nav>*@
+
+
+
+
+
+
+
+
+-------------------
+
+
+//List<tbl_AI_Mapping> data = new List<tbl_AI_Mapping>();
+//int pageSize = 500;
+//var count = db.tbl_AI_Mapping.Count();
+//int currentPage = pageNumber;
+//int totalPages = (int)Math.Ceiling(count / (double)pageSize);
+//bool previousPage = currentPage > 1 ? true : false;
+//bool nextPage = currentPage < totalPages ? true : false;
+//if (!string.IsNullOrWhiteSpace(searchby))
+//{
+//    data = db.tbl_AI_Mapping.Where(x => (!string.IsNullOrWhiteSpace(x.DealerCode) && x.DealerCode.Contains(searchby)) || (!string.IsNullOrWhiteSpace(x.DealerName) && x.DealerName.Contains(x.DealerName))).ToList();
+//    data = data.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+//}
+//else
+//{
+//    data = db.tbl_AI_Mapping.OrderBy(x => x.Id).Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+//}
+
+PaginationList paging = new PaginationList
+{
+    //currentPage = currentPage,
+    //previousPage = previousPage,
+    //firstCount = pageSize * (pageNumber - 1) + 1,
+    //lastCount = (pageSize * (pageNumber - 1)) + data.Count(),
+    //nextPage = nextPage,
+    //totalPages = totalPages,
+    //pageSize = pageSize,
+    //totalCount = count,
+    //AI_Mappings = data
+    AI_Mappings = db.tbl_AI_Mapping.OrderBy(x => x.Id).Take(100).ToList()
+};
+
+
