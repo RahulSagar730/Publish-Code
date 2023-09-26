@@ -1,0 +1,5 @@
+
+
+//string path = @"c:\HSRP_LOG\HSRP_Review.txt";
+//string Message = "Date :" + DateTime.Now.ToString() + " StepA-1" + DelerCode1 + Environment.NewLine;
+//System.IO.File.AppendAllText(path, Message);

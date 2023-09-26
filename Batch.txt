@@ -1,0 +1,10 @@
+private static List<List<Batch>> SplitListForFacebookBatch(List<Batch> creatives, int nSize = 25000)
+{
+    var list = new List<List<Batch>>();
+    // nSize = 25000;
+    for (int i = 0; i < creatives.Count; i += nSize)
+    {
+        list.Add(creatives.GetRange(i, Math.Min(nSize, creatives.Count - i)));
+    }
+    return list;
+}
